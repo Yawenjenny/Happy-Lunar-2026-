@@ -61,7 +61,7 @@ const SpringRunnerGame: React.FC = () => {
         w: HORSE_SIZE, 
         h: HORSE_SIZE, 
         vy: 0, 
-        isJumping: false,
+        isJumping: false, 
         frameCount: 0
       },
       mountains: [],
@@ -99,26 +99,39 @@ const SpringRunnerGame: React.FC = () => {
   // Input Listeners
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.code === 'Space') {
+      if (e.code === 'Space' || e.code === 'ArrowUp') {
         e.preventDefault(); // Prevent scrolling
         handleJump();
       }
     };
 
-    const handleTouchStart = (e: TouchEvent) => {
-      e.preventDefault(); // Prevent scrolling/zooming
+    const handleInputStart = (e: TouchEvent | MouseEvent) => {
+      // Allow button clicks (like Play Again) to pass through naturally
+      const target = e.target as HTMLElement;
+      if (target.closest('button')) return;
+
+      // If game is over, we don't want to prevent default everywhere (though we could)
+      // but primarily we just want to ignore jumps.
+      if (gameState === GameState.GAME_OVER) return;
+
+      // Prevent default behavior (scrolling, zooming, selection)
+      if (e.cancelable) {
+        e.preventDefault();
+      }
+      
       handleJump();
     };
 
     window.addEventListener('keydown', handleKeyDown);
-    const canvas = canvasRef.current;
-    canvas?.addEventListener('touchstart', handleTouchStart, { passive: false });
+    window.addEventListener('touchstart', handleInputStart, { passive: false });
+    window.addEventListener('mousedown', handleInputStart);
 
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
-      canvas?.removeEventListener('touchstart', handleTouchStart);
+      window.removeEventListener('touchstart', handleInputStart);
+      window.removeEventListener('mousedown', handleInputStart);
     };
-  }, [handleJump]);
+  }, [handleJump, gameState]);
 
   // Main Game Loop
   useEffect(() => {
@@ -324,18 +337,17 @@ const SpringRunnerGame: React.FC = () => {
   }, [gameState, assetsLoaded]); // Re-bind when game state changes (mainly for restart)
 
   return (
-    <div className="relative">
+    <div className="relative w-full h-full">
       <canvas
         ref={canvasRef}
         width={CANVAS_WIDTH}
         height={CANVAS_HEIGHT}
-        className="block bg-[#8F1E1A] w-full max-w-[800px] h-auto cursor-pointer"
+        className="block bg-[#8F1E1A] w-full h-auto"
         style={{ touchAction: 'none' }}
-        onClick={handleJump}
       />
       
       {/* HUD - Score */}
-      <div className="absolute top-4 left-4 flex items-center bg-white/80 backdrop-blur-sm px-4 py-2 rounded-full border-2 border-yellow-500 shadow-md">
+      <div className="absolute top-4 left-4 flex items-center bg-white/80 backdrop-blur-sm px-4 py-2 rounded-full border-2 border-yellow-500 shadow-md select-none pointer-events-none">
         <span className="text-2xl mr-2">💰</span>
         <span className="text-xl font-bold text-red-700 font-mono">¥{score}</span>
       </div>
@@ -349,10 +361,17 @@ const SpringRunnerGame: React.FC = () => {
 
       {/* Start Overlay */}
       {gameState === GameState.START && assetsLoaded && (
-        <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/30 backdrop-blur-[2px]">
+        <div 
+          className="absolute inset-0 flex flex-col items-center justify-center bg-black/30 backdrop-blur-[2px] cursor-pointer"
+          // We don't necessarily need onClick here since window listener handles it, 
+          // but having it creates a specific target if z-index issues arise.
+          // However, we rely on window listener to keep logic unified.
+        >
           <div className="bg-red-600 p-6 rounded-lg shadow-xl text-center border-4 border-yellow-400 animate-bounce-slow">
             <h2 className="text-3xl font-bold text-yellow-300 mb-2">Ready?</h2>
-            <p className="text-white text-lg">Press Space or Tap to Jump</p>
+            <div className="bg-yellow-400 text-red-800 font-bold py-2 px-8 rounded-full text-xl shadow-lg mt-2 inline-block">
+              Tap to Start
+            </div>
           </div>
         </div>
       )}
