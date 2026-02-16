@@ -7,9 +7,9 @@ export const CONFIG: GameConfig = {
   gravity: 0.6,
   jumpStrength: -12,
   groundHeight: 50,
-  baseSpeed: 5,
-  spawnRateMountain: 100, // Frames between spawn checks (randomized)
-  spawnRateYuanbao: 60,
+  baseSpeed: 2.5, // Reduced from 3.5 to make it even slower
+  spawnRateMountain: 220, // Increased interval to maintain distance with slower speed
+  spawnRateYuanbao: 150, // Increased interval for coins
 };
 
 export const COLORS = {
